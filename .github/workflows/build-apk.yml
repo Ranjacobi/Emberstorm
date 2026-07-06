@@ -1,14 +1,15 @@
 name: Build Emberstorm APK
 
-# Builds the installable APK in the cloud on every push,
-# and whenever you click "Run workflow" on the Actions tab.
 on:
   push:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,9 +34,17 @@ jobs:
       - name: Build debug APK
         run: gradle assembleDebug --no-daemon --stacktrace
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk Emberstorm-build${{ github.run_number }}.apk
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: Emberstorm-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
+          tag_name: build-${{ github.run_number }}
+          name: Emberstorm Build ${{ github.run_number }}
+          body: |
+            **Emberstorm** by ItRan Studios - Ran Jacobi
+            Download Emberstorm-build${{ github.run_number }}.apk below and install on your Android phone.
+          files: Emberstorm-build${{ github.run_number }}.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
