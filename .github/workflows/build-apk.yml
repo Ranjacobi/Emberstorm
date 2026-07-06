@@ -9,6 +9,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Required permission to allow GitHub Actions to publish Releases
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,9 +37,20 @@ jobs:
       - name: Build debug APK
         run: gradle assembleDebug --no-daemon --stacktrace
 
-      - name: Upload APK
+      - name: Upload APK as Workflow Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Emberstorm-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      # NEW STEP: Publishes the APK directly to the Releases page
+      - name: Create GitHub Release & Upload APK
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Emberstorm Build #${{ github.run_number }}
+          tag_name: build-${{ github.run_number }}
+          generate_release_notes: true
+          files: app/build/outputs/apk/debug/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
